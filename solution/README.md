@@ -6,7 +6,7 @@ Steps to be taken as per the csvserver assignment.
 
 ---
 
-## Part 1
+## Part I
 
 1. Run the container image `infracloudio/csvserver:latest` in background and check if it's running.
 
@@ -117,11 +117,11 @@ Content-Type: text/html; charset=utf-8
 
 Open in web browser - http://localhost:9393
 
-![Screenshot - Part-1 Result](https://github.com/j4w3d/infracloudio-csvserver/blob/main/solution/part-1-result.png)
+![Screenshot - Part-1 Result](https://github.com/j4w3d/infracloudio-csvserver/blob/main/solution/screenshots/Screenshot-part-1-result.png)
 
 ---
 
-## Part 2
+## Part II
 
 0. Delete any containers running from the last part.
 
@@ -136,7 +136,7 @@ $ docker rm $(docker ps -a| grep "infracloudio/csvserver:latest" | awk '{ print 
 
 1. Create a `docker-compose.yaml` file for the setup from part I.
 
-```sh
+```yaml
 
 version: '3.3'
 services:
@@ -169,4 +169,69 @@ csvserver_app  | 2022/05/25 18:01:30 listening on ****
 
 ---
 
-## Part 3
+## Part III
+
+0. Delete any containers running from the last part.
+
+```sh
+
+# Remove all the containers using image `infracloudio/csvserver:latest`
+$ docker rm $(docker ps -a| grep "infracloudio/csvserver:latest" | awk '{ print $1 }' )
+```
+
+1. Add Prometheus container (`prom/prometheus:v2.22.0`) to the `docker-compose.yaml` form part II.
+
+```yaml
+version: '3.3'
+services:
+...
+...
+  prometheus_app:
+    image: prom/prometheus:v2.22.0
+    container_name: prometheus_app
+    command: ["--web.enable-lifecycle", "--config.file=/etc/prometheus/prometheus.yml", "--log.level=debug"]
+    ports:
+      - 9090:9090
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+    restart: unless-stopped
+
+```
+
+> using `--web.enable-lifecycle` we can reload configuration files (e.g. rules) without restarting Prometheus
+
+2. Configure Prometheus to collect data from our application at <application>:<port>/metrics endpoint. (Where the <port> is the port from I.5)
+
+```yaml
+
+# prometheus.yml
+
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+
+scrape_configs:
+  - job_name: services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 'prometheus_app:9090'
+          - 'csvserver_app:9300'
+
+```
+
+3. Make sure that Prometheus is accessible at http://localhost:9090 on the host.
+
+> Already published the port `9090` in `docker-compose.yaml` file
+
+![Screenshot - Part 3 result - prometheus targets](https://github.com/j4w3d/infracloudio-csvserver/blob/main/solution/screenshots/Screenshot-part-3-prometheus-targets.png)
+
+4. Type `csvserver_records` in the query box of Prometheus. Click on `Execute` and then switch to the `Graph` tab.
+
+![Screenshot - Part 3 - prometheus query result](https://github.com/j4w3d/infracloudio-csvserver/blob/main/solution/screenshots/Screenshot-part-3-prometheus-query-result.png)
+
+The Prometheus instance should be accessible at http://localhost:9090, and it should show a straight line graph with value 10 (consider shrinking the time range to 5m).
+
+![Screenshot - Part 3 - prometheus graph](https://github.com/j4w3d/infracloudio-csvserver/blob/main/solution/screenshots/Screenshot-part-3-prometheus-graph.png)
+
+---
