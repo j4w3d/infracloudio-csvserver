@@ -122,3 +122,51 @@ Open in web browser - http://localhost:9393
 ---
 
 ## Part 2
+
+0. Delete any containers running from the last part.
+
+```sh
+
+# Stop all the containers using image `infracloudio/csvserver:latest`
+$ docker stop $(docker ps | grep "infracloudio/csvserver:latest" | awk '{ print $1 }' )
+
+# Remove all the containers using image `infracloudio/csvserver:latest`
+$ docker rm $(docker ps -a| grep "infracloudio/csvserver:latest" | awk '{ print $1 }' )
+```
+
+1. Create a `docker-compose.yaml` file for the setup from part I.
+
+```sh
+
+version: '3.3'
+services:
+  csvserver_app:
+    image: infracloudio/csvserver:latest
+    container_name: csvserver_app
+    environment:
+      - CSVSERVER_BORDER=Orange
+    ports:
+      - "127.0.0.1:9393:9300"
+    volumes:
+      - "./inputFile:/csvserver/inputdata"
+    restart: unless-stopped
+```
+
+
+2. One should be able to run the application with `docker-compose up`.
+
+```sh
+
+$ docker-compose up
+
+[+] Running 2/2
+ ⠿ Network solution_default  Created                                                                                                             0.1s
+ ⠿ Container csvserver_app   Created                                                                                                             0.2s
+Attaching to csvserver_app
+csvserver_app  | 2022/05/25 18:01:30 listening on ****
+
+```
+
+---
+
+## Part 3
